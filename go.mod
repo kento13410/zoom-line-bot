@@ -7,3 +7,8 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/line/line-bot-sdk-go v7.8.0+incompatible
 )
+
+require (
+	github.com/go-resty/resty/v2 v2.13.1 // indirect
+	golang.org/x/net v0.25.0 // indirect
+)

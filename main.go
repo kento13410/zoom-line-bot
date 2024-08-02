@@ -1,24 +1,15 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"github.com/donvito/zoom-go/zoomAPI/constants/meeting"
 	"github.com/joho/godotenv"
-	"io"
+	"github.com/kento13410/zoom_line_bot/zoom"
+	"github.com/line/line-bot-sdk-go/linebot"
 	"log"
 	"net/http"
-	"net/url"
 	"os"
 	"strings"
-
-	zoom "github.com/donvito/zoom-go/zoomAPI"
-	"github.com/line/line-bot-sdk-go/linebot"
 )
-
-type TokenResponse struct {
-	AccessToken string `json:"access_token"`
-}
 
 func main() {
 	if err := godotenv.Load(); err != nil {
@@ -29,6 +20,7 @@ func main() {
 	if port == "" {
 		port = "8080"
 	}
+	log.Printf("Starting server on port %s", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
 
@@ -40,6 +32,7 @@ func callbackHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	events, err := bot.ParseRequest(r)
 	if err != nil {
 		if err == linebot.ErrInvalidSignature {
@@ -55,68 +48,21 @@ func callbackHandler(w http.ResponseWriter, r *http.Request) {
 			switch message := event.Message.(type) {
 			case *linebot.TextMessage:
 				if strings.ToLower(message.Text) == "zoom" {
-					token, err := getAccessToken(os.Getenv("ZOOM_ACCOUNT_ID"), os.Getenv("ZOOM_CLIENT_ID")+":"+os.Getenv("ZOOM_CLIENT_SECRET"))
-					zoomResp, err := createZoomMeeting(token)
+					token, err := zoom.GetAccessToken(os.Getenv("CLIENT_ID"), os.Getenv("CLIENT_SECRET"), os.Getenv("ACCOUNT_ID"))
 					if err != nil {
-						bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage("Zoomの作成に失敗しました")).Do()
-					} else {
-						bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(fmt.Sprintf("ホスト用URL: %s\\n参加者用URL: %s", zoomResp.StartUrl, zoomResp.JoinUrl))).Do()
+						log.Fatal(err)
 					}
+					response, err := zoom.CreateZoomMeeting(token.AccessToken)
+					if err != nil {
+						bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(fmt.Sprintf("zoom meetingの作成に失敗しました: %s", err.Error()))).Do()
+						return
+					}
+
+					bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(fmt.Sprintf("zoom meetingの作成に成功しました: %s", response.JoinURL))).Do()
 				}
 			}
 		}
 	}
-}
-
-func getAccessToken(accountID, auth string) (string, error) {
-	endpoint := "https://zoom.us/oauth/token"
-	data := url.Values{}
-	data.Set("grant_type", "account_credentials")
-	data.Set("account_id", accountID)
-
-	req, err := http.NewRequest("POST", endpoint, strings.NewReader(data.Encode()))
-	if err != nil {
-		return "", err
-	}
-
-	req.Header.Add("Authorization", "Basic "+auth)
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
-	}
-
-	var tokenResponse TokenResponse
-	if err := json.Unmarshal(body, &tokenResponse); err != nil {
-		return "", err
-	}
-
-	return tokenResponse.AccessToken, nil
-}
-
-func createZoomMeeting(token string) (zoom.CreateMeetingResponse, error) {
-	userId := os.Getenv("USER_ID")
-
-	client := zoom.NewClient(os.Getenv("ZOOM_API_URL"), token)
-	return client.CreateMeeting(
-		userId,
-		"",
-		meeting.MeetingTypeInstant,
-		"",
-		30,
-		"",
-		"Asia/Japan",
-		"",
-		"",
-		nil,
-		nil,
-	)
+	// 200を返す
+	w.WriteHeader(200)
 }
