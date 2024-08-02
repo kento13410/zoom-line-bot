@@ -2,26 +2,20 @@ package main
 
 import (
 	"fmt"
-	"github.com/joho/godotenv"
-	"github.com/kento13410/zoom_line_bot/zoom"
-	"github.com/line/line-bot-sdk-go/linebot"
 	"log"
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/awslabs/aws-lambda-go-api-proxy/handlerfunc"
+	"github.com/kento13410/zoom_line_bot/zoom"
+	"github.com/line/line-bot-sdk-go/linebot"
 )
 
 func main() {
-	if err := godotenv.Load(); err != nil {
-		log.Fatalf("Error loading .env file")
-	}
-	http.HandleFunc("/callback", callbackHandler)
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
-	log.Printf("Starting server on port %s", port)
-	log.Fatal(http.ListenAndServe(":"+port, nil))
+	adapter := handlerfunc.New(callbackHandler)
+	lambda.Start(adapter.ProxyWithContext)
 }
 
 func callbackHandler(w http.ResponseWriter, r *http.Request) {
