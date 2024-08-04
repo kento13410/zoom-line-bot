@@ -87,15 +87,15 @@ func GetAccessToken(clientID, clientSecret, accountID string) (*TokenResponse, e
 	return &tokenResponse, nil
 }
 
-func CreateZoomMeeting(token string) (*CreateMeetingResponse, error) {
+func CreateZoomMeeting(token string, meetingTime time.Time) (*CreateMeetingResponse, error) {
 	client := resty.New()
 
 	meetingRequest := &CreateMeetingRequest{
-		Topic:     "Sample Meeting",
+		Topic:     "Business Contest Meeting",
 		Type:      2, // Scheduled meeting
-		StartTime: time.Now().Add(24 * time.Hour).Format("2006-01-02T15:04:05Z"),
+		StartTime: meetingTime.Format("2006-01-02T15:04:05"),
 		Duration:  60, // 1 hour
-		Timezone:  "UTC",
+		Timezone:  "JTC",
 		Password:  "123456",
 		Agenda:    "Discuss project status",
 		Settings: Settings{
