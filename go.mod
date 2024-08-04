@@ -1,14 +1,12 @@
 module github.com/kento13410/zoom_line_bot
 
-go 1.20
+go 1.21
 
 require (
-	github.com/donvito/zoom-go v0.0.0-20200531091511-63028f2c4f98
-	github.com/joho/godotenv v1.5.1
+	github.com/aws/aws-lambda-go v1.47.0
+	github.com/awslabs/aws-lambda-go-api-proxy v0.16.2
+	github.com/go-resty/resty/v2 v2.13.1
 	github.com/line/line-bot-sdk-go v7.8.0+incompatible
 )
 
-require (
-	github.com/go-resty/resty/v2 v2.13.1 // indirect
-	golang.org/x/net v0.25.0 // indirect
-)
+require golang.org/x/net v0.25.0 // indirect
